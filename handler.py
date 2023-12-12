@@ -3,10 +3,15 @@ from wakeonlan import send_magic_packet
 import json
 import subprocess
 import threading
+import shlex
 
 class WoLHandler(BaseHTTPRequestHandler):
-    target_ip = '192.168.1.100'  # Die IP-Adresse des Zielcomputers
-    target_mac = '00:11:22:33:44:55'  # Die MAC-Adresse des Zielcomputers
+    def __init__(self, target_ip, target_mac, target_username, target_password, *args, **kwargs):
+        self.target_ip = target_ip
+        self.target_mac = target_mac
+        self.target_username = target_username
+        self.target_password = target_password
+        super().__init__(*args, **kwargs)
 
     def do_GET(self):
         if self.path == '/':
@@ -105,16 +110,39 @@ class WoLHandler(BaseHTTPRequestHandler):
 
     def shutdown_computer(self):
         try:
-            subprocess.run(['ssh', 'user@' + self.target_ip, 'sudo', 'shutdown', '-h', 'now'], check=True)
+            # Construct the sshpass command to use the target_username and target_password
+            sshpass_command = f'sshpass -p {shlex.quote(self.target_password)}'
+            
+            # Construct the full ssh command with sshpass
+            ssh_command = [
+                sshpass_command,
+                'ssh',
+                f'{self.target_username}@{self.target_ip}',
+                'sudo',
+                'shutdown',
+                '-h',
+                'now'
+            ]
+
+            subprocess.run(ssh_command, check=True)
             return 'Ausschaltbefehl gesendet.'
         except subprocess.CalledProcessError:
             return 'Fehler beim Senden des Ausschaltbefehls.'
 
 def run_server():
-    server_address = ('', 8080)
-    httpd = HTTPServer(server_address, WoLHandler)
-    print('Server läuft auf Port 8080...')
-    httpd.serve_forever()
+    # Use a list of instances with different parameters
+    instances = [
+        WoLHandler('192.168.1.100', '00:11:22:33:44:55', 'user1', 'password1'),
+        WoLHandler('192.168.1.101', '00:11:22:33:44:56', 'user2', 'password2'),
+        # Add more instances as needed
+    ]
+
+    # Run servers for each instance
+    for instance in instances:
+        server_address = ('', 8080)
+        httpd = HTTPServer(server_address, instance)
+        print(f'Server läuft auf Port 8080 für {instance.target_ip}...')
+        threading.Thread(target=httpd.serve_forever).start()
 
 if __name__ == '__main__':
     run_server()

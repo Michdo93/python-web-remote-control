@@ -8,6 +8,9 @@ At first you have to install following:
 ```
 pip install wakeonlan
 pip install http.server
+
+sudo apt update
+sudo apt install sshpass -y
 ```
 
 Then you have to download the script and make it executable:

@@ -57,5 +57,9 @@ sudo systemctl enable web-remote-handler
 You can change the following lines:
 
 ```
-
+    instances = [
+        WoLHandler('192.168.1.100', '00:11:22:33:44:55', 'user1', 'password1'),
+        WoLHandler('192.168.1.101', '00:11:22:33:44:56', 'user2', 'password2'),
+        # Add more instances as needed
+    ]
 ```
